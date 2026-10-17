@@ -982,6 +982,45 @@ export function createSim({ now, rng }) {
     return out;
   }
 
+  // --- persistence (for hosts that hibernate/evict, e.g. Cloudflare DO).
+  // All entities are plain JSON-safe objects; Maps are stored as entry arrays.
+  function serialize() {
+    return JSON.stringify({
+      v: 1,
+      players: [...S.players],
+      monsters: [...S.monsters],
+      projectiles: S.projectiles,
+      telegraphs: S.telegraphs,
+      zones: S.zones,
+      parties: [...S.parties].map(([k, p]) => [k, { ...p, members: [...p.members] }]),
+      invites: [...S.invites],
+      spawners: S.spawners,
+      bossId: S.bossId,
+      bossDeadAt: S.bossDeadAt,
+      tickN: S.tickN,
+      seq: S.seq,
+    });
+  }
+  function restore(json) {
+    const d = typeof json === 'string' ? JSON.parse(json) : json;
+    if (!d || d.v !== 1) throw new Error('bad snapshot version');
+    S.players = new Map(d.players);
+    S.monsters = new Map(d.monsters);
+    S.projectiles = d.projectiles || [];
+    S.telegraphs = d.telegraphs || [];
+    S.zones = d.zones || [];
+    S.parties = new Map((d.parties || []).map(([k, p]) => [k, { ...p, members: new Set(p.members) }]));
+    S.invites = new Map(d.invites || []);
+    S.spawners = d.spawners || [];
+    S.bossId = d.bossId || null;
+    S.bossDeadAt = d.bossDeadAt || 0;
+    S.tickN = d.tickN || 0;
+    S.seq = d.seq || S.seq;
+    S.events = [];
+    S.lastTick = -1; // next tick starts with dt=0 (dt is clamped anyway)
+    S.nowMs = 0;
+  }
+
   // --- init world
   initSpawners();
   S.bossDeadAt = now() - BOSS.respawnMs; // spawn boss immediately below
@@ -993,5 +1032,6 @@ export function createSim({ now, rng }) {
     snapshot, getPlayer: (id) => S.players.get(id) || null,
     playerCount: () => S.players.size,
     partyOf, pendingInvites,
+    serialize, restore,
   };
 }

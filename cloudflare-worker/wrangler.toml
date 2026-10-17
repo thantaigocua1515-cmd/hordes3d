@@ -1,0 +1,15 @@
+# hordes3d — Cloudflare Worker + Durable Object room server.
+# Deploy: npm i -g wrangler && wrangler login && wrangler deploy
+# (run inside this directory)
+
+name = "hordes3d"
+main = "src/index.js"
+compatibility_date = "2026-10-17"
+
+[[durable_objects.bindings]]
+name = "GAME_ROOM"
+class_name = "GameRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]

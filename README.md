@@ -62,9 +62,38 @@ Open a second tab to test PvP/parties with yourself.
 The game splits into two pieces that deploy separately:
 
 ```
-CLIENT (static)                    SERVER (persistent Node process)
-Vercel / GitHub Pages              Render (free) / Fly.io (~$2/mo) / any Node host
+CLIENT (static)                    SERVER (persistent world)
+Vercel / GitHub Pages              Cloudflare Durable Objects (recommended)
+                                   — or Render (free) / Fly.io (~$2/mo)
 ```
+
+### Recommended: server → Cloudflare Durable Objects
+
+Free tier, no credit card, no VPS. One Durable Object = one persistent open
+world; it hibernates ($0) when nobody plays and the world is persisted.
+
+See **[cloudflare-worker/HUONG-DAN.md](cloudflare-worker/HUONG-DAN.md)**
+(Vietnamese step-by-step). Short version:
+
+```bash
+npm install -g wrangler && wrangler login
+cd cloudflare-worker && npm install
+npx wrangler deploy   # → https://hordes3d.<account>.workers.dev
+```
+
+Game WebSocket URL: `wss://hordes3d.<account>.workers.dev/ws`
+
+How it works: `cloudflare-worker/src/room.js` (GameRoom DO) imports the
+**same** `shared/sim.js` as the Node server — zero game-logic duplication.
+The tick is alarm-driven at 10Hz (`setInterval` is forbidden in a
+hibernatable DO), state persists to DO storage on a 30s cadence + on
+membership changes + when the room empties. Tested in
+`cloudflare-worker/test/room-test.js` (17/17 PASS in Node with stubbed
+DO APIs: join, chat, snapshots, movement, party, eviction→restore,
+empty→persist→hibernate).
+
+Free-tier note: 100k DO requests/day ≈ 2–3h of active 10Hz play/day.
+The free plan fails closed past quota (no surprise billing).
 
 ### 1. Client → Vercel (static)
 
@@ -91,11 +120,13 @@ GitHub Pages alternative: enable Pages on the repo serving the `dist/`
 folder (build it locally with `npm run make-static` and commit, or use a
 GitHub Action).
 
-### 2. Server → Render (free) or Fly.io
+### Alternative: server → Render / Fly.io (plain Node process)
 
-The server is a single persistent Node process with **one** npm dependency
-(`ws`). It is *not* suitable for Vercel Functions (message-driven, billed per
-active CPU — a poor fit for a continuous 20Hz authoritative tick).
+Prefer not to use Cloudflare? The original Node adapter (`server/index.js`,
+20Hz tick, serves the client too for local dev) still works everywhere
+(a single persistent Node process with one npm dependency, `ws`).
+Note: it is *not* suitable for Vercel Functions (message-driven, billed per
+active CPU — a poor fit for a continuous authoritative tick).
 
 **Option A — Render (free, no credit card):**
 
