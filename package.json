@@ -1,0 +1,1 @@
+{"dependencies":{"ws":"^8.18.0"},"description":"Thin Node adapter for the hordes3d browser MMORPG MVP. All game rules live in shared/sim.js.","name":"hordes3d-server","private":true,"scripts":{"make-static":"node tools/make-static.js","start":"node server/index.js","test":"node test/smoke.js"},"type":"module","version":"0.1.0"}

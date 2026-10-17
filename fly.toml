@@ -1,0 +1,27 @@
+# hordes3d on Fly.io — https://fly.io/docs
+# 1. Install flyctl: https://fly.io/docs/flyctl/install
+# 2. fly auth login
+# 3. fly launch  (reuses this file; pick a unique app name when asked)
+# 4. fly deploy
+# Cheapest machine (shared-cpu-1x, 256MB) ≈ $2/month. Credit card required.
+
+app = "hordes3d"
+primary_region = "sin" # Singapore — closest to Vietnam
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"   # sleep when idle to save money; wakes on next visit
+  auto_start_machines = true
+  min_machines_running = 0
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 500
+    soft_limit = 250
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

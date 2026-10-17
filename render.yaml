@@ -1,0 +1,11 @@
+# hordes3d on Render — free tier, no credit card required.
+# Deploy: Render dashboard → New → Blueprint → connect this repo.
+# Caveat: free web services sleep after 15 min idle and take ~1 min to wake.
+services:
+  - type: web
+    name: hordes3d-server
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /
